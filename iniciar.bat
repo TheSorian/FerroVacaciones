@@ -1,71 +1,63 @@
 @echo off
-chcp 65001 >nul
-title FerroVacaciones 🏖️ - Gestor de Calendario y Cuadrante
+setlocal EnableExtensions
+title FerroVacaciones - Gestor de Calendario y Cuadrante
 
 echo ======================================================================
-echo           🏖️  FERROVACACIONES - INSTALADOR Y LANZADOR 🏖️
-echo           Planificador de Vacaciones, RJ, Asuntos Propios
+echo           FERROVACACIONES - INSTALADOR Y LANZADOR
+echo       Planificador de Vacaciones, RJ y Asuntos Propios
 echo ======================================================================
 echo.
 
-REM ----------------------------------------------------------------------
-REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO DESDE GITHUB
-REM ----------------------------------------------------------------------
-if not exist "server.py" (
+REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO
+if exist "server.py" goto :CHECK_PYTHON
+if exist "FerroVacaciones\server.py" (
+    cd FerroVacaciones
+    goto :CHECK_PYTHON
+)
+
+:DOWNLOAD_REPO
+echo [1/4] Descargando la aplicacion desde GitHub...
+where git >nul 2>nul
+if %ERRORLEVEL% equ 0 (
+    echo Clonando repositorio con Git...
+    git clone https://github.com/TheSorian/FerroVacaciones.git
     if exist "FerroVacaciones\server.py" (
         cd FerroVacaciones
-    ) else (
-        echo [1/4] Descargando la aplicación desde GitHub...
-        where git >nul 2>nul
-        if %ERRORLEVEL% equ 0 (
-            echo Clonando repositorio con Git...
-            git clone https://github.com/TheSorian/FerroVacaciones.git
-            cd FerroVacaciones
-        ) else (
-            echo Git no detectado. Descargando repositorio con PowerShell...
-            powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-                "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
-                "Write-Host 'Descargando paquete FerroVacaciones...'; " ^
-                "Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; " ^
-                "Write-Host 'Extrayendo archivos...'; " ^
-                "Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; " ^
-                "if (-not (Test-Path 'FerroVacaciones')) { New-Item -ItemType Directory -Path 'FerroVacaciones' | Out-Null }; " ^
-                "Get-ChildItem -Path 'temp_zip\FerroVacaciones-main\*' -Force | Move-Item -Destination 'FerroVacaciones' -Force; " ^
-                "Remove-Item 'repo.zip' -Force; " ^
-                "Remove-Item 'temp_zip' -Recurse -Force;"
-            cd FerroVacaciones
-        )
+        goto :CHECK_PYTHON
     )
 )
 
+echo Git no detectado. Descargando paquete ZIP mediante PowerShell...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; if (-not (Test-Path 'FerroVacaciones')) { New-Item -ItemType Directory -Path 'FerroVacaciones' | Out-Null }; Copy-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination 'FerroVacaciones' -Recurse -Force; Remove-Item 'repo.zip' -Force; Remove-Item 'temp_zip' -Recurse -Force"
+
+if exist "FerroVacaciones\server.py" (
+    cd FerroVacaciones
+    goto :CHECK_PYTHON
+)
+
 if not exist "server.py" (
-    echo [ERROR] No se pudo encontrar server.py en la carpeta.
-    echo Asegúrate de tener conexión a Internet y vuelve a intentarlo.
+    echo [ERROR] No se pudo encontrar server.py.
+    echo Asegurate de tener conexion a Internet y vuelve a intentarlo.
     pause
     exit /b 1
 )
 
-REM ----------------------------------------------------------------------
-REM 2. DETECTAR O INSTALAR PYTHON AUTOMÁTICAMENTE (0%% PRIVILEGIOS ADMIN)
-REM ----------------------------------------------------------------------
-echo [2/4] Verificando instalación de Python...
+:CHECK_PYTHON
+echo [2/4] Verificando instalacion de Python...
 set "PY_CMD="
 
-REM Comprobar si python está en el PATH del sistema
 where python >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     set "PY_CMD=python"
     goto :PYTHON_FOUND
 )
 
-REM Comprobar lanzador py
 where py >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     set "PY_CMD=py"
     goto :PYTHON_FOUND
 )
 
-REM Comprobar si ya está instalado en el perfil de usuario (sin estar en PATH)
 if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
     set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
     goto :PYTHON_FOUND
@@ -79,31 +71,20 @@ if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
     goto :PYTHON_FOUND
 )
 
-REM Si NO está instalado, descargarlo e instalarlo automáticamente mediante PowerShell
 echo.
-echo [Python no detectado] Descargando e instalando Python oficial automáticamente...
-echo (Instalación en modo usuario: no requiere ningún permiso de administrador).
+echo Python no detectado en el sistema.
+echo Descargando e instalando Python 3.12 automaticamente...
+echo (Instalacion en modo usuario: no requiere permisos de administrador).
 echo Por favor, espera unos instantes...
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
-    "$installer = Join-Path $env:TEMP 'python_installer.exe'; " ^
-    "$is64 = [Environment]::Is64BitOperatingSystem; " ^
-    "$url = if ($is64) { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' } else { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7.exe' }; " ^
-    "Write-Host 'Descargando instalador de Python desde python.org...'; " ^
-    "Invoke-WebRequest -Uri $url -OutFile $installer; " ^
-    "Write-Host 'Instalando Python en tu perfil de usuario (sin permisos de administrador)...'; " ^
-    "Start-Process -FilePath $installer -ArgumentList '/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_test=0 Shortcuts=0' -Wait; " ^
-    "Remove-Item $installer -Force -ErrorAction SilentlyContinue;"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $installer = Join-Path $env:TEMP 'python_installer.exe'; $is64 = [Environment]::Is64BitOperatingSystem; $url = if ($is64) { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' } else { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7.exe' }; Invoke-WebRequest -Uri $url -OutFile $installer; Start-Process -FilePath $installer -ArgumentList '/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_test=0 Shortcuts=0' -Wait; Remove-Item $installer -Force -ErrorAction SilentlyContinue"
 
-REM Verificar si la instalación completó con éxito en LocalAppData
 if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
     set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
     goto :PYTHON_FOUND
 )
 
-REM Reintentar con el comando recién añadido al PATH
 where python >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     set "PY_CMD=python"
@@ -111,18 +92,16 @@ if %ERRORLEVEL% equ 0 (
 )
 
 echo.
-echo [AVISO] La autoinstalación automática no pudo completarse.
-echo Puedes instalar Python en 1 solo clic desde la Microsoft Store de Windows
-echo buscando 'Python 3.12' (se instala en tu usuario sin pedir permisos de admin).
+echo [AVISO] La instalacion automatica no pudo completarse.
+echo Puedes instalar Python en 1 clic desde la Microsoft Store de Windows
+echo buscando 'Python 3.12' (se instala en tu usuario sin pedir admin).
 pause
 exit /b 1
 
 :PYTHON_FOUND
 echo Python detectado correctamente: %PY_CMD%
 
-REM ----------------------------------------------------------------------
-REM 3. CREAR ENTORNO VIRTUAL LOCAL (VENV) E INSTALAR DEPENDENCIAS
-REM ----------------------------------------------------------------------
+:SETUP_VENV
 if not exist "venv\Scripts\python.exe" (
     echo [3/4] Creando entorno virtual local aislado (venv)...
     "%PY_CMD%" -m venv venv
@@ -137,19 +116,17 @@ echo [3/4] Comprobando e instalando dependencias (Flask, OpenPyXL)...
 call venv\Scripts\activate.bat
 python -m pip install -r requirements.txt --quiet --disable-pip-version-check
 if %ERRORLEVEL% neq 0 (
-    echo [AVISO] Reintentando instalación de dependencias...
+    echo [AVISO] Reintentando instalacion de dependencias...
     pip install -r requirements.txt
 )
 
-REM ----------------------------------------------------------------------
-REM 4. ARRANCAR EL SERVIDOR WEB Y ABRIR EL NAVEGADOR
-REM ----------------------------------------------------------------------
+:LAUNCH
 echo.
 echo ======================================================================
-echo [4/4] ¡Todo listo! Iniciando FerroVacaciones...
+echo [4/4] Todo listo! Iniciando FerroVacaciones...
 echo.
-echo  - Aplicación disponible en: http://localhost:5000
-echo  - Para cerrar la aplicación, simplemente cierra esta ventana.
+echo   - Aplicacion disponible en: http://localhost:5000
+echo   - Para cerrar la aplicacion, simplemente cierra esta ventana.
 echo ======================================================================
 echo.
 
