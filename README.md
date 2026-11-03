@@ -64,21 +64,39 @@ No necesitas conocimientos técnicos, ni permisos de administrador, ni instalar 
 
 ### 🐧 En Linux / macOS
 
+Puedes utilizar el script automatizado **[`iniciar.sh`](iniciar.sh)** (disponible también en la sección de **[Releases](https://github.com/TheSorian/FerroVacaciones/releases/latest)**):
+
 ```bash
-# 1. Clonar el repositorio
+# 1. Clonar el repositorio (o descargar únicamente iniciar.sh)
 git clone https://github.com/TheSorian/FerroVacaciones.git
 cd FerroVacaciones
 
-# 2. Crear y activar entorno virtual de Python
+# 2. Dar permisos de ejecución y arrancar
+chmod +x iniciar.sh
+./iniciar.sh
+```
+
+> **💡 Ejecución rápida en 1 sola línea (sin clonar previamente):**
+> ```bash
+> curl -sSL https://github.com/TheSorian/FerroVacaciones/releases/download/v1.0.0/iniciar.sh -o iniciar.sh && chmod +x iniciar.sh && ./iniciar.sh
+> ```
+
+<details>
+<summary><b>O si prefieres el método manual paso a paso:</b></summary>
+
+```bash
+# Crear y activar entorno virtual
 python3 -m venv venv
 source venv/bin/activate
 
-# 3. Instalar dependencias backend
+# Instalar dependencias backend
 pip install -r requirements.txt
 
-# 4. Iniciar el servidor
+# Iniciar servidor
 python3 server.py
 ```
+</details>
+
 Abre tu navegador en: **`http://localhost:5000`**
 
 ---
