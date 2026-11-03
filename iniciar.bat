@@ -21,10 +21,11 @@ where git >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     echo Clonando repositorio con Git...
     git clone https://github.com/TheSorian/FerroVacaciones.git
-    if exist "FerroVacaciones\server.py" (
-        cd FerroVacaciones
-        goto :CHECK_PYTHON
-    )
+)
+
+if exist "FerroVacaciones\server.py" (
+    cd FerroVacaciones
+    goto :CHECK_PYTHON
 )
 
 echo Git no detectado. Descargando paquete ZIP mediante PowerShell...
@@ -74,7 +75,7 @@ if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
 echo.
 echo Python no detectado en el sistema.
 echo Descargando e instalando Python 3.12 automaticamente...
-echo (Instalacion en modo usuario: no requiere permisos de administrador).
+echo (Instalacion en modo usuario: no requiere permisos de administrador)
 echo Por favor, espera unos instantes...
 echo.
 
@@ -102,22 +103,23 @@ exit /b 1
 echo Python detectado correctamente: %PY_CMD%
 
 :SETUP_VENV
-if not exist "venv\Scripts\python.exe" (
-    echo [3/4] Creando entorno virtual local aislado (venv)...
-    "%PY_CMD%" -m venv venv
-    if %ERRORLEVEL% neq 0 (
-        echo [ERROR] Error al crear el entorno virtual con %PY_CMD%.
-        pause
-        exit /b 1
-    )
+if exist "venv\Scripts\python.exe" goto :INSTALL_DEPS
+
+echo [3/4] Creando entorno virtual local aislado: venv
+"%PY_CMD%" -m venv venv
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] No se pudo crear el entorno virtual.
+    pause
+    exit /b 1
 )
 
+:INSTALL_DEPS
 echo [3/4] Comprobando e instalando dependencias (Flask, OpenPyXL)...
 call venv\Scripts\activate.bat
-python -m pip install -r requirements.txt --quiet --disable-pip-version-check
+venv\Scripts\python.exe -m pip install -r requirements.txt --quiet --disable-pip-version-check
 if %ERRORLEVEL% neq 0 (
     echo [AVISO] Reintentando instalacion de dependencias...
-    pip install -r requirements.txt
+    venv\Scripts\pip.exe install -r requirements.txt
 )
 
 :LAUNCH
@@ -131,6 +133,6 @@ echo ======================================================================
 echo.
 
 start "" "http://localhost:5000"
-python server.py
+venv\Scripts\python.exe server.py
 
 pause
