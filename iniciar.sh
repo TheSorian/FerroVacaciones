@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Asegurar que el directorio de trabajo sea siempre la carpeta donde está este script
+cd "$(dirname "$0")"
+
 # Colores para terminal
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -15,42 +18,38 @@ echo -e "${BLUE}================================================================
 echo ""
 
 # ----------------------------------------------------------------------
-# 1. COMPROBAR O DESCARGAR EL REPOSITORIO DESDE GITHUB
+# 1. COMPROBAR O DESCARGAR EL REPOSITORIO EN LA CARPETA ACTUAL
 # ----------------------------------------------------------------------
 if [ ! -f "server.py" ]; then
     if [ -f "FerroVacaciones/server.py" ]; then
-        cd FerroVacaciones
+        echo "Unificando archivos en la carpeta principal..."
+        cp -rn FerroVacaciones/* . 2>/dev/null || cp -r FerroVacaciones/* .
+        rm -rf FerroVacaciones
     else
-        echo -e "${YELLOW}[1/4] Descargando la aplicación desde GitHub...${NC}"
-        if command -v git >/dev/null 2>&1; then
-            echo "Clonando repositorio con Git..."
-            git clone https://github.com/TheSorian/FerroVacaciones.git
-            cd FerroVacaciones
-        elif command -v curl >/dev/null 2>&1; then
-            echo "Git no detectado. Descargando paquete ZIP mediante curl..."
+        echo -e "${YELLOW}[1/4] Descargando FerroVacaciones desde GitHub en esta carpeta...${NC}"
+        if command -v curl >/dev/null 2>&1; then
             curl -sSL "https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip" -o repo.zip
             unzip -q repo.zip
-            mkdir -p FerroVacaciones
-            mv FerroVacaciones-main/* FerroVacaciones/
+            cp -rn FerroVacaciones-main/* . 2>/dev/null || cp -r FerroVacaciones-main/* .
             rm -rf repo.zip FerroVacaciones-main
-            cd FerroVacaciones
         elif command -v wget >/dev/null 2>&1; then
-            echo "Git no detectado. Descargando paquete ZIP mediante wget..."
             wget -q "https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip" -O repo.zip
             unzip -q repo.zip
-            mkdir -p FerroVacaciones
-            mv FerroVacaciones-main/* FerroVacaciones/
+            cp -rn FerroVacaciones-main/* . 2>/dev/null || cp -r FerroVacaciones-main/* .
             rm -rf repo.zip FerroVacaciones-main
-            cd FerroVacaciones
+        elif command -v git >/dev/null 2>&1; then
+            git clone --depth 1 https://github.com/TheSorian/FerroVacaciones.git temp_git
+            cp -rn temp_git/* . 2>/dev/null || cp -r temp_git/* .
+            rm -rf temp_git
         else
-            echo -e "${RED}[ERROR] Se requiere git, curl o wget para descargar el repositorio.${NC}"
+            echo -e "${RED}[ERROR] Se requiere curl, wget o git para descargar el repositorio.${NC}"
             exit 1
         fi
     fi
 fi
 
 if [ ! -f "server.py" ]; then
-    echo -e "${RED}[ERROR] No se pudo encontrar server.py en la carpeta.${NC}"
+    echo -e "${RED}[ERROR] No se pudo encontrar server.py tras la descarga.${NC}"
     echo "Asegúrate de tener conexión a Internet y vuelve a intentarlo."
     exit 1
 fi
@@ -110,17 +109,19 @@ echo ""
 echo -e "${GREEN}======================================================================${NC}"
 echo -e "${GREEN}[4/4] ¡Todo listo! Iniciando FerroVacaciones...${NC}"
 echo -e "${GREEN}  - Web disponible en: http://localhost:5000${NC}"
+echo -e "${GREEN}  - Abriendo navegador automáticamente...${NC}"
 echo -e "${GREEN}  - Para cerrar la aplicación, pulsa Ctrl + C en esta terminal.${NC}"
 echo -e "${GREEN}======================================================================${NC}"
 echo ""
 
 URL="http://localhost:5000"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    open "$URL" >/dev/null 2>&1 &
-elif command -v xdg-open >/dev/null 2>&1; then
-    # Linux con interfaz gráfica
-    xdg-open "$URL" >/dev/null 2>&1 &
-fi
+(
+    sleep 2
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        open "$URL" >/dev/null 2>&1
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$URL" >/dev/null 2>&1
+    fi
+) &
 
 exec $PYTHON_EXEC server.py

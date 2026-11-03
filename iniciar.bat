@@ -2,42 +2,32 @@
 setlocal EnableExtensions
 title FerroVacaciones - Gestor de Calendario y Cuadrante
 
+REM Asegurar que el directorio de trabajo sea siempre la carpeta donde esta este archivo .bat
+cd /d "%~dp0"
+
 echo ======================================================================
 echo           FERROVACACIONES - INSTALADOR Y LANZADOR
 echo       Planificador de Vacaciones, RJ y Asuntos Propios
 echo ======================================================================
 echo.
 
-REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO
+REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO EN LA CARPETA ACTUAL
 if exist "server.py" goto :CHECK_PYTHON
+
+REM Si en una ejecucion previa se descargo en subcarpeta FerroVacaciones, unificar aqui
 if exist "FerroVacaciones\server.py" (
-    cd FerroVacaciones
-    goto :CHECK_PYTHON
+    echo Unificando archivos en la carpeta principal...
+    xcopy /s /e /y /q "FerroVacaciones\*" "." >nul 2>nul
+    rd /s /q "FerroVacaciones" >nul 2>nul
+    if exist "server.py" goto :CHECK_PYTHON
 )
 
 :DOWNLOAD_REPO
-echo [1/4] Descargando la aplicacion desde GitHub...
-where git >nul 2>nul
-if %ERRORLEVEL% equ 0 (
-    echo Clonando repositorio con Git...
-    git clone https://github.com/TheSorian/FerroVacaciones.git
-)
-
-if exist "FerroVacaciones\server.py" (
-    cd FerroVacaciones
-    goto :CHECK_PYTHON
-)
-
-echo Git no detectado. Descargando paquete ZIP mediante PowerShell...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; if (-not (Test-Path 'FerroVacaciones')) { New-Item -ItemType Directory -Path 'FerroVacaciones' | Out-Null }; Copy-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination 'FerroVacaciones' -Recurse -Force; Remove-Item 'repo.zip' -Force; Remove-Item 'temp_zip' -Recurse -Force"
-
-if exist "FerroVacaciones\server.py" (
-    cd FerroVacaciones
-    goto :CHECK_PYTHON
-)
+echo [1/4] Descargando FerroVacaciones desde GitHub en esta carpeta...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Host 'Descargando paquete oficial...'; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; Write-Host 'Extrayendo archivos...'; Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; Copy-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination '.' -Recurse -Force; Remove-Item 'repo.zip' -Force; Remove-Item 'temp_zip' -Recurse -Force"
 
 if not exist "server.py" (
-    echo [ERROR] No se pudo encontrar server.py.
+    echo [ERROR] No se pudo encontrar server.py tras la descarga.
     echo Asegurate de tener conexion a Internet y vuelve a intentarlo.
     pause
     exit /b 1
@@ -128,11 +118,13 @@ echo ======================================================================
 echo [4/4] Todo listo! Iniciando FerroVacaciones...
 echo.
 echo   - Aplicacion disponible en: http://localhost:5000
+echo   - Abriendo navegador automaticamente...
 echo   - Para cerrar la aplicacion, simplemente cierra esta ventana.
 echo ======================================================================
 echo.
 
-start "" "http://localhost:5000"
+REM Abrir navegador en 2 segundos para dar tiempo a que Flask inicie el servidor
+start "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://localhost:5000'"
 venv\Scripts\python.exe server.py
 
 pause
