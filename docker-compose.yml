@@ -1,12 +1,12 @@
 services:
-  vacaciones-gsm:
+  ferrovacaciones:
     build: .
-    container_name: vacaciones-gsm
+    container_name: ferrovacaciones
     restart: unless-stopped
     ports:
       - "5000:5000"
     volumes:
-      # Persist SQLite database file on host
+      # Persistencia de la base de datos local SQLite
       - ./vacaciones.db:/app/vacaciones.db
     environment:
       - FLASK_ENV=production
