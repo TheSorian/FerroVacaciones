@@ -46,7 +46,7 @@ Diseñada con interfaz reactiva moderna en **React 18 + Vite**, servidor backend
 
 No necesitas conocimientos técnicos, ni permisos de administrador, ni instalar Node.js:
 
-1. Clona el repositorio o descarga el archivo **[`iniciar.bat`](iniciar.bat)**:
+1. Descarga directamente el archivo **[`iniciar.bat`](https://github.com/TheSorian/FerroVacaciones/releases/download/v1.0.0/iniciar.bat)** desde la sección de **[Releases](https://github.com/TheSorian/FerroVacaciones/releases/latest)** (o clona el repositorio si lo prefieres):
    ```bash
    git clone https://github.com/TheSorian/FerroVacaciones.git
    cd FerroVacaciones
