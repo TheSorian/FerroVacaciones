@@ -11,9 +11,29 @@ echo       Planificador de Vacaciones, RJ y Asuntos Propios
 echo ======================================================================
 echo.
 
-REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO EN LA CARPETA ACTUAL
-if exist "server.py" goto :CHECK_PYTHON
+REM ----------------------------------------------------------------------
+REM 1. COMPROBAR DESCARGA INICIAL O BUSCAR ACTUALIZACIONES
+REM ----------------------------------------------------------------------
+if not exist "server.py" goto :INITIAL_DOWNLOAD
 
+REM Si la aplicacion ya esta descargada, buscar actualizaciones en GitHub
+echo [1/4] Buscando actualizaciones en GitHub...
+if exist ".git" (
+    where git >nul 2>nul
+    if %ERRORLEVEL% equ 0 (
+        git pull --quiet
+        echo Repositorio sincronizado con Git.
+        goto :UPDATES_CHECKED
+    )
+)
+
+REM Comprobacion automatica sin Git mediante PowerShell y commit SHA
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $remote = (Invoke-RestMethod -Uri 'https://api.github.com/repos/TheSorian/FerroVacaciones/commits/main' -TimeoutSec 3).sha; $local = if (Test-Path '.version') { (Get-Content '.version').Trim() } else { '' }; if ($remote -and ($remote -ne $local)) { Write-Host 'Nueva version detectada en GitHub. Actualizando...'; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'update.zip'; Expand-Archive -Path 'update.zip' -DestinationPath 'temp_update' -Force; Get-ChildItem -Path 'temp_update\FerroVacaciones-main\*' -Force | Where-Object { $_.Name -notlike 'vacaciones.db*' -and $_.Name -notlike '*.bat' } | Copy-Item -Destination '.' -Recurse -Force; Set-Content -Path '.version' -Value $remote; Remove-Item 'update.zip' -Force; Remove-Item 'temp_update' -Recurse -Force; Write-Host 'Actualizacion completada con exito (tu base de datos local no se ha modificado).' } else { Write-Host 'La aplicacion ya esta actualizada a la ultima version.' } } catch { Write-Host 'Modo offline: no se pudo verificar actualizaciones, continuando...' }"
+
+:UPDATES_CHECKED
+goto :CHECK_PYTHON
+
+:INITIAL_DOWNLOAD
 REM Si en una ejecucion previa se descargo en subcarpeta FerroVacaciones, unificar aqui
 if exist "FerroVacaciones\server.py" (
     echo Unificando archivos en la carpeta principal...
@@ -22,9 +42,8 @@ if exist "FerroVacaciones\server.py" (
     if exist "server.py" goto :CHECK_PYTHON
 )
 
-:DOWNLOAD_REPO
 echo [1/4] Descargando FerroVacaciones desde GitHub en esta carpeta...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Host 'Descargando paquete oficial...'; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; Write-Host 'Extrayendo archivos...'; Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; Copy-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination '.' -Recurse -Force; Remove-Item 'repo.zip' -Force; Remove-Item 'temp_zip' -Recurse -Force"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Host 'Descargando paquete oficial...'; Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; Write-Host 'Extrayendo archivos...'; Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; Copy-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination '.' -Recurse -Force; try { $remote = (Invoke-RestMethod -Uri 'https://api.github.com/repos/TheSorian/FerroVacaciones/commits/main' -TimeoutSec 3).sha; if ($remote) { Set-Content -Path '.version' -Value $remote } } catch {}; Remove-Item 'repo.zip' -Force; Remove-Item 'temp_zip' -Recurse -Force"
 
 if not exist "server.py" (
     echo [ERROR] No se pudo encontrar server.py tras la descarga.
@@ -33,6 +52,9 @@ if not exist "server.py" (
     exit /b 1
 )
 
+REM ----------------------------------------------------------------------
+REM 2. DETECTAR O INSTALAR PYTHON AUTOMATICAMENTE (0%% PRIVILEGIOS ADMIN)
+REM ----------------------------------------------------------------------
 :CHECK_PYTHON
 echo [2/4] Verificando instalacion de Python...
 set "PY_CMD="
@@ -92,6 +114,9 @@ exit /b 1
 :PYTHON_FOUND
 echo Python detectado correctamente: %PY_CMD%
 
+REM ----------------------------------------------------------------------
+REM 3. CREAR ENTORNO VIRTUAL LOCAL (VENV) E INSTALAR DEPENDENCIAS
+REM ----------------------------------------------------------------------
 :SETUP_VENV
 if exist "venv\Scripts\python.exe" goto :INSTALL_DEPS
 
@@ -112,6 +137,9 @@ if %ERRORLEVEL% neq 0 (
     venv\Scripts\pip.exe install -r requirements.txt
 )
 
+REM ----------------------------------------------------------------------
+REM 4. ARRANCAR EL SERVIDOR WEB Y ABRIR EL NAVEGADOR
+REM ----------------------------------------------------------------------
 :LAUNCH
 echo.
 echo ======================================================================

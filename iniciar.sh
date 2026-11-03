@@ -18,9 +18,40 @@ echo -e "${BLUE}================================================================
 echo ""
 
 # ----------------------------------------------------------------------
-# 1. COMPROBAR O DESCARGAR EL REPOSITORIO EN LA CARPETA ACTUAL
+# 1. COMPROBAR DESCARGA INICIAL O BUSCAR ACTUALIZACIONES
 # ----------------------------------------------------------------------
-if [ ! -f "server.py" ]; then
+if [ -f "server.py" ]; then
+    echo -e "${YELLOW}[1/4] Buscando actualizaciones en GitHub...${NC}"
+    if [ -d ".git" ] && command -v git >/dev/null 2>&1; then
+        if git pull --quiet 2>/dev/null; then
+            echo -e "${GREEN}Repositorio sincronizado con Git.${NC}"
+        else
+            echo "Modo offline: no se pudo sincronizar con Git, continuando con la versión local..."
+        fi
+    else
+        # Comprobar versión mediante commit SHA de GitHub
+        REMOTE_SHA=$(curl -s --max-time 3 "https://api.github.com/repos/TheSorian/FerroVacaciones/commits/main" 2>/dev/null | grep '"sha":' | head -n 1 | cut -d '"' -f 4 || true)
+        LOCAL_SHA=$(cat .version 2>/dev/null || true)
+        if [ -n "$REMOTE_SHA" ] && [ "$REMOTE_SHA" != "$LOCAL_SHA" ]; then
+            echo -e "${YELLOW}Nueva versión detectada en GitHub. Actualizando archivos...${NC}"
+            if curl -sSL "https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip" -o update.zip; then
+                unzip -q -o update.zip
+                # Copiar excluyendo base de datos local y scripts de inicio
+                if command -v rsync >/dev/null 2>&1; then
+                    rsync -av --exclude='vacaciones.db*' --exclude='.git' FerroVacaciones-main/ . >/dev/null 2>&1
+                else
+                    cp -r FerroVacaciones-main/* . 2>/dev/null || true
+                fi
+                echo "$REMOTE_SHA" > .version
+                rm -rf update.zip FerroVacaciones-main
+                echo -e "${GREEN}Actualización completada con éxito (tu base de datos local no se ha modificado).${NC}"
+            fi
+        else
+            echo "La aplicación ya está actualizada a la última versión."
+        fi
+    fi
+else
+    # Descarga inicial si no existe server.py
     if [ -f "FerroVacaciones/server.py" ]; then
         echo "Unificando archivos en la carpeta principal..."
         cp -rn FerroVacaciones/* . 2>/dev/null || cp -r FerroVacaciones/* .
