@@ -29,9 +29,11 @@ if not exist "server.py" (
                 "Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; " ^
                 "Write-Host 'Extrayendo archivos...'; " ^
                 "Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; " ^
-                "Move-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination '.' -Force; " ^
+                "if (-not (Test-Path 'FerroVacaciones')) { New-Item -ItemType Directory -Path 'FerroVacaciones' | Out-Null }; " ^
+                "Get-ChildItem -Path 'temp_zip\FerroVacaciones-main\*' -Force | Move-Item -Destination 'FerroVacaciones' -Force; " ^
                 "Remove-Item 'repo.zip' -Force; " ^
                 "Remove-Item 'temp_zip' -Recurse -Force;"
+            cd FerroVacaciones
         )
     )
 )
