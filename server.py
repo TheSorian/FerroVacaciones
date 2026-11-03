@@ -151,7 +151,7 @@ def update_category(name):
 def export_excel():
     year = int(request.args.get('year', 2026))
     export_file = database.export_to_excel(year)
-    return send_file(export_file, as_attachment=True, download_name=f'Vacaciones_{year}_GSM.xlsx')
+    return send_file(export_file, as_attachment=True, download_name=f'FerroVacaciones_{year}.xlsx')
 
 @app.route('/api/reset-from-excel', methods=['POST'])
 def reset_from_excel():

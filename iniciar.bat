@@ -1,33 +1,35 @@
 @echo off
 chcp 65001 >nul
-title GSM Vacaciones 🏖️ - Gestor de Calendario y Cuadrante
+title FerroVacaciones 🏖️ - Gestor de Calendario y Cuadrante
 
 echo ======================================================================
-echo             🏖️  GSM VACACIONES - INSTALADOR Y LANZADOR 🏖️
+echo           🏖️  FERROVACACIONES - INSTALADOR Y LANZADOR 🏖️
 echo           Planificador de Vacaciones, RJ, Asuntos Propios
 echo ======================================================================
 echo.
 
-REM 1. Comprobar si estamos dentro de la carpeta del proyecto o hay que descargarlo
+REM ----------------------------------------------------------------------
+REM 1. COMPROBAR O DESCARGAR EL REPOSITORIO DESDE GITHUB
+REM ----------------------------------------------------------------------
 if not exist "server.py" (
-    if exist "GSMVacaciones-Clean\server.py" (
-        cd GSMVacaciones-Clean
+    if exist "FerroVacaciones\server.py" (
+        cd FerroVacaciones
     ) else (
         echo [1/4] Descargando la aplicación desde GitHub...
         where git >nul 2>nul
         if %ERRORLEVEL% equ 0 (
             echo Clonando repositorio con Git...
-            git clone https://github.com/TheSorian/GSMVacaciones-Clean.git
-            cd GSMVacaciones-Clean
+            git clone https://github.com/TheSorian/FerroVacaciones.git
+            cd FerroVacaciones
         ) else (
-            echo Git no detectado. Descargando paquete ZIP mediante PowerShell...
+            echo Git no detectado. Descargando repositorio con PowerShell...
             powershell -NoProfile -ExecutionPolicy Bypass -Command ^
                 "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
-                "Write-Host 'Descargando archivo...'; " ^
-                "Invoke-WebRequest -Uri 'https://github.com/TheSorian/GSMVacaciones-Clean/archive/refs/heads/main.zip' -OutFile 'repo.zip'; " ^
+                "Write-Host 'Descargando paquete FerroVacaciones...'; " ^
+                "Invoke-WebRequest -Uri 'https://github.com/TheSorian/FerroVacaciones/archive/refs/heads/main.zip' -OutFile 'repo.zip'; " ^
                 "Write-Host 'Extrayendo archivos...'; " ^
                 "Expand-Archive -Path 'repo.zip' -DestinationPath 'temp_zip' -Force; " ^
-                "Move-Item -Path 'temp_zip\GSMVacaciones-Clean-main\*' -Destination '.' -Force; " ^
+                "Move-Item -Path 'temp_zip\FerroVacaciones-main\*' -Destination '.' -Force; " ^
                 "Remove-Item 'repo.zip' -Force; " ^
                 "Remove-Item 'temp_zip' -Recurse -Force;"
         )
@@ -36,44 +38,94 @@ if not exist "server.py" (
 
 if not exist "server.py" (
     echo [ERROR] No se pudo encontrar server.py en la carpeta.
-    echo Asegúrate de tener conexión a Internet para descargar el repositorio.
+    echo Asegúrate de tener conexión a Internet y vuelve a intentarlo.
     pause
     exit /b 1
 )
 
-REM 2. Comprobar instalación de Python (sin requerir permisos de admin)
-echo [2/4] Verificando Python...
+REM ----------------------------------------------------------------------
+REM 2. DETECTAR O INSTALAR PYTHON AUTOMÁTICAMENTE (0%% PRIVILEGIOS ADMIN)
+REM ----------------------------------------------------------------------
+echo [2/4] Verificando instalación de Python...
 set "PY_CMD="
+
+REM Comprobar si python está en el PATH del sistema
 where python >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     set "PY_CMD=python"
-) else (
-    where py >nul 2>nul
-    if %ERRORLEVEL% equ 0 (
-        set "PY_CMD=py"
-    )
+    goto :PYTHON_FOUND
 )
 
-if "%PY_CMD%"=="" (
-    echo.
-    echo [ERROR] No se ha encontrado Python en el sistema.
-    echo.
-    echo Para ejecutar esta aplicación sin permisos de administrador:
-    echo  1. Abre la 'Microsoft Store' en Windows.
-    echo  2. Busca 'Python 3.12' o 'Python 3.11' y pulsa 'Obtener' o 'Instalar'.
-    echo     (Se instala en tu usuario sin pedir clave de administrador).
-    echo  3. Vuelve a ejecutar este archivo 'iniciar.bat'.
-    echo.
-    pause
-    exit /b 1
+REM Comprobar lanzador py
+where py >nul 2>nul
+if %ERRORLEVEL% equ 0 (
+    set "PY_CMD=py"
+    goto :PYTHON_FOUND
 )
 
-REM 3. Crear entorno virtual local (venv) e instalar dependencias ligeras
+REM Comprobar si ya está instalado en el perfil de usuario (sin estar en PATH)
+if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+    set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    goto :PYTHON_FOUND
+)
+if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
+    set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+    goto :PYTHON_FOUND
+)
+if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
+    set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+    goto :PYTHON_FOUND
+)
+
+REM Si NO está instalado, descargarlo e instalarlo automáticamente mediante PowerShell
+echo.
+echo [Python no detectado] Descargando e instalando Python oficial automáticamente...
+echo (Instalación en modo usuario: no requiere ningún permiso de administrador).
+echo Por favor, espera unos instantes...
+echo.
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; " ^
+    "$installer = Join-Path $env:TEMP 'python_installer.exe'; " ^
+    "$is64 = [Environment]::Is64BitOperatingSystem; " ^
+    "$url = if ($is64) { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7-amd64.exe' } else { 'https://www.python.org/ftp/python/3.12.7/python-3.12.7.exe' }; " ^
+    "Write-Host 'Descargando instalador de Python desde python.org...'; " ^
+    "Invoke-WebRequest -Uri $url -OutFile $installer; " ^
+    "Write-Host 'Instalando Python en tu perfil de usuario (sin permisos de administrador)...'; " ^
+    "Start-Process -FilePath $installer -ArgumentList '/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_test=0 Shortcuts=0' -Wait; " ^
+    "Remove-Item $installer -Force -ErrorAction SilentlyContinue;"
+
+REM Verificar si la instalación completó con éxito en LocalAppData
+if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+    set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    goto :PYTHON_FOUND
+)
+
+REM Reintentar con el comando recién añadido al PATH
+where python >nul 2>nul
+if %ERRORLEVEL% equ 0 (
+    set "PY_CMD=python"
+    goto :PYTHON_FOUND
+)
+
+echo.
+echo [AVISO] La autoinstalación automática no pudo completarse.
+echo Puedes instalar Python en 1 solo clic desde la Microsoft Store de Windows
+echo buscando 'Python 3.12' (se instala en tu usuario sin pedir permisos de admin).
+pause
+exit /b 1
+
+:PYTHON_FOUND
+echo Python detectado correctamente: %PY_CMD%
+
+REM ----------------------------------------------------------------------
+REM 3. CREAR ENTORNO VIRTUAL LOCAL (VENV) E INSTALAR DEPENDENCIAS
+REM ----------------------------------------------------------------------
 if not exist "venv\Scripts\python.exe" (
-    echo [3/4] Creando entorno virtual aislado de Python (0%% privilegios requeridos)...
-    %PY_CMD% -m venv venv
+    echo [3/4] Creando entorno virtual local aislado (venv)...
+    "%PY_CMD%" -m venv venv
     if %ERRORLEVEL% neq 0 (
-        echo [ERROR] Error al crear el entorno virtual.
+        echo [ERROR] Error al crear el entorno virtual con %PY_CMD%.
         pause
         exit /b 1
     )
@@ -87,12 +139,16 @@ if %ERRORLEVEL% neq 0 (
     pip install -r requirements.txt
 )
 
-REM 4. Lanzar la aplicación y abrir el navegador web
+REM ----------------------------------------------------------------------
+REM 4. ARRANCAR EL SERVIDOR WEB Y ABRIR EL NAVEGADOR
+REM ----------------------------------------------------------------------
 echo.
-echo [4/4] ¡Todo listo! Iniciando servidor web local...
+echo ======================================================================
+echo [4/4] ¡Todo listo! Iniciando FerroVacaciones...
 echo.
 echo  - Aplicación disponible en: http://localhost:5000
-echo  - Para cerrar la aplicación, cierra esta ventana de comandos.
+echo  - Para cerrar la aplicación, simplemente cierra esta ventana.
+echo ======================================================================
 echo.
 
 start "" "http://localhost:5000"

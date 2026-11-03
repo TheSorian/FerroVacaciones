@@ -643,9 +643,9 @@ export default function App() {
     }
   }
 
-  // Reset to original Excel
+  // Reset to default clean template
   const handleResetExcel = async () => {
-    if (!window.confirm('¿Seguro que deseas reiniciar los datos desde el archivo original Vacaciones_2026_GSM.xlsx? Se perderán las modificaciones no guardadas en el Excel.')) {
+    if (!window.confirm('¿Seguro que deseas reiniciar los datos a la plantilla oficial limpia de FerroVacaciones? Se perderán las modificaciones no guardadas.')) {
       return
     }
     try {
@@ -754,7 +754,7 @@ export default function App() {
           <div className="brand-icon">🏖️</div>
           <div className="brand-text">
             <div className="brand-title-row">
-              <h1>GSM Vacaciones</h1>
+              <h1>FerroVacaciones</h1>
               <div className="year-selector-group">
                 <button
                   type="button"
