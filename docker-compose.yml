@@ -1,0 +1,12 @@
+services:
+  vacaciones-gsm:
+    build: .
+    container_name: vacaciones-gsm
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist SQLite database file on host
+      - ./vacaciones.db:/app/vacaciones.db
+    environment:
+      - FLASK_ENV=production

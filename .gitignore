@@ -1,0 +1,22 @@
+# Python / Entorno
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Bases de datos SQLite (se generan automáticamente al arrancar la app)
+vacaciones.db*
+*.db
+*.sqlite3
+
+# Archivos Excel
+*.xlsx
+*.xls
+
+# Node / Frontend
+node_modules/
+dist/assets/*.map
+
+# Sistema
+.DS_Store
+Thumbs.db
