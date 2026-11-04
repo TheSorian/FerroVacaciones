@@ -393,6 +393,18 @@ export default function App() {
     return null
   }
 
+  const getCategoryQuickPickerRestriction = (catName, dateStr) => {
+    if (!isCategoryAllowedOnDate(catName, dateStr)) {
+      if (/^Vacaciones \d{4}$/.test(catName)) {
+        return 'Hasta el 31 de marzo'
+      }
+      if (catName === 'RJ') {
+        return 'Hasta 30 nov (salvo 24/31 dic)'
+      }
+    }
+    return null
+  }
+
   // Day Click Handler: routes to multi-select or quick picker
   const handleDayClick = (item) => {
     if (!item) return
@@ -1458,14 +1470,14 @@ export default function App() {
                   >
                     <div className="chip-dot" style={{ backgroundColor: cat.color }} />
                     <div className="quick-cat-text">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <div className="quick-cat-header-row">
                         <span className="quick-cat-name">{cat.name}</span>
                         {!isAllowed && (
                           <span className="restriction-badge-small">⏰ Fuera de plazo</span>
                         )}
                       </div>
                       <span className="quick-cat-rem">
-                        {restrictionReason ? restrictionReason : `${cat.remainingFormatted} rest. (${cat.usedFormatted}/${cat.totalFormatted})`}
+                        {getCategoryQuickPickerRestriction(cat.name, quickPickerDay.date) || `${cat.remainingFormatted} rest. (${cat.usedFormatted}/${cat.totalFormatted})`}
                       </span>
                     </div>
                   </button>

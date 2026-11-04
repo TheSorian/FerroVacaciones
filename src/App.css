@@ -1460,10 +1460,11 @@ body {
   border-radius: var(--radius-lg);
   padding: 20px;
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   box-shadow: var(--shadow-lg);
   box-sizing: border-box;
   animation: slideIn 0.18s ease-out;
+  overflow: hidden;
 }
 
 .quick-picker-header {
@@ -1498,28 +1499,31 @@ body {
 
 .quick-picker-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .quick-cat-btn {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 9px 11px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   transition: all 0.15s ease;
   text-align: left;
   box-sizing: border-box;
   color: var(--text-primary);
   width: 100%;
+  min-width: 0;
 }
 
-.quick-cat-btn:hover {
+.quick-cat-btn:hover:not(:disabled) {
   background: var(--bg-surface-hover);
   border-color: #64748b;
   transform: translateY(-1px);
@@ -1535,6 +1539,15 @@ body {
   flex-direction: column;
   min-width: 0;
   flex: 1;
+  gap: 2px;
+}
+
+.quick-cat-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
 }
 
 .quick-cat-name {
@@ -1543,12 +1556,16 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .quick-cat-rem {
   font-size: 11px;
   color: var(--text-secondary);
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .restriction-badge-small {
@@ -1560,12 +1577,13 @@ body {
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.4);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .quick-cat-btn.disabled-restriction {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
-  filter: grayscale(0.5);
+  filter: grayscale(0.4);
   background: rgba(15, 23, 42, 0.5);
 }
 
@@ -1586,6 +1604,7 @@ body {
   border-style: dashed;
   border-color: #ef4444;
   background: rgba(239, 68, 68, 0.08);
+  width: 100%;
 }
 
 .quick-cat-btn.unmark-btn:hover {
@@ -1806,7 +1825,7 @@ body {
     font-size: 12px;
   }
   .quick-picker-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .quick-cat-btn.unmark-btn {
     grid-column: span 1;
